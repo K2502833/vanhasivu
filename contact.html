@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contact | Antikvariaatti Vanha Sivu</title>
     <link rel="stylesheet" href="style.css">
+    <script src="app.js" defer></script>
 </head>
 <body>
 
@@ -17,8 +18,16 @@
                 <li><a href="about.html">About Us</a></li>
                 <li><a href="listing.html">Book Catalogue</a></li>
                 <li><a href="contact.html" aria-current="page">Contact</a></li>
+                <li><button type="button" class="nav-popover-btn" popovertarget="shop-info">Shop Hours</button></li>
             </ul>
         </nav>
+        <div id="shop-info" popover>
+            <h2>Opening Hours &amp; Info</h2>
+            <p>Mon–Fri: 10:00–17:00</p>
+            <p>Sat: 10:00–14:00</p>
+            <p>Address: Keskustie 12, Ähtäri</p>
+            <button type="button" popovertarget="shop-info" popovertargetaction="hide">Close</button>
+        </div>
     </header>
 
     <main>
@@ -30,34 +39,33 @@
             Tell us what you are looking for, and we will keep an eye out.
         </p>
 
-        <form>
+        <form id="wish-form">
             <p>
                 <label for="name">Your name:</label>
-                <input type="text" id="name" name="name" required>
+                <input type="text" id="name" name="name" aria-describedby="name-error" required>
+                <span class="error" id="name-error"></span>
             </p>
 
             <p>
                 <label for="email">Your email:</label>
-                <input type="email" id="email" name="email" required>
+                <input type="email" id="email" name="email" aria-describedby="email-error" required>
+                <span class="error" id="email-error"></span>
             </p>
 
             <p>
                 <label for="title">Book title:</label>
-                <input type="text" id="title" name="title" required>
+                <input type="text" id="title" name="title" aria-describedby="title-error" required>
+                <span class="error" id="title-error"></span>
             </p>
 
             <p>
-                <label for="author">Author:</label>
+                <label for="author">Author (optional):</label>
                 <input type="text" id="author" name="author">
             </p>
 
-            <button type="button">Send Book Wish</button>
+            <button type="submit">Prepare Book Wish</button>
+            <p id="form-status" role="status"></p>
         </form>
-
-        <p>
-            This form is a demonstration. Email submission
-            will be connected in a later development stage.
-        </p>
 
         <h2>Find Our Bookshop</h2>
         <p>Ähtäri, Finland</p>
