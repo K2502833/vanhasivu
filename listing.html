@@ -22,9 +22,9 @@
         </nav>
         <div id="shop-info" popover>
             <h2>Opening Hours &amp; Info</h2>
-            <p>Mon–Fri: 10:00–17:00</p>
+            <p>Tue–Fri: 11:00–17:00</p>
             <p>Sat: 10:00–14:00</p>
-            <p>Address: Keskustie 12, Ähtäri</p>
+            <p>Address: Ostostie 4, 63700 Ähtäri</p>
             <button type="button" popovertarget="shop-info" popovertargetaction="hide">Close</button>
         </div>
     </header>
@@ -32,57 +32,43 @@
     <main>
         <h1>Our Book Catalogue</h1>
 
-        <h2>Search and Filter Books</h2>
+        <h2>Search and Sort Books</h2>
         <form class="search-form" id="catalogue-controls">
             <div class="field-group">
-                <label for="book-search">Title or author:</label>
-                <input type="search" id="book-search" name="search" placeholder="e.g. Väinö Linna">
+                <label for="book-search">Search title or author:</label>
+                <input type="search" id="book-search" name="q" placeholder="e.g. Northern Lake">
             </div>
             <div class="field-group">
-                <label for="condition-filter">Condition:</label>
-                <select id="condition-filter" name="condition">
-                    <option value="all">All conditions</option>
-                    <option value="like-new">Like new</option>
-                    <option value="good">Good</option>
-                    <option value="worn">Worn</option>
+                <label for="sort-select">Sort by:</label>
+                <select id="sort-select" name="sort">
+                    <option value="">Default order</option>
+                    <option value="price">Price: cheapest first</option>
                 </select>
             </div>
+            <button type="submit">Search</button>
         </form>
 
-        <p id="results-status" role="status">Showing 6 of 6 books</p>
+        <p id="results-status" role="status" aria-live="polite">Loading books…</p>
 
-        <ul class="book-list" id="book-list">
-            <li class="book-card" data-condition="good">
-                <h3>Tuntematon sotilas</h3>
-                <p class="book-author">Author: Väinö Linna</p>
-                <p>Condition: Good &middot; Price: 12.00 &euro;</p>
+        <div id="empty-state" class="empty-box" hidden>
+            <p>No books matched your search.</p>
+            <p><a class="cta" href="contact.html">Send us a book wish</a> and we will keep an eye out!</p>
+        </div>
+
+        <ul class="book-list" id="book-list" aria-busy="true"></ul>
+
+        <template id="book-template">
+            <li class="book-card">
+                <h3 class="book-title"></h3>
+                <p class="book-author"></p>
+                <p class="book-meta"></p>
+                <p class="book-subjects"></p>
             </li>
-            <li class="book-card" data-condition="like-new">
-                <h3>Sinuhe egyptiläinen</h3>
-                <p class="book-author">Author: Mika Waltari</p>
-                <p>Condition: Like new &middot; Price: 16.50 &euro;</p>
-            </li>
-            <li class="book-card" data-condition="worn">
-                <h3>Seitsemän veljestä</h3>
-                <p class="book-author">Author: Aleksis Kivi</p>
-                <p>Condition: Worn &middot; Price: 8.00 &euro;</p>
-            </li>
-            <li class="book-card" data-condition="like-new">
-                <h3>Kalevala</h3>
-                <p class="book-author">Author: Elias Lönnrot</p>
-                <p>Condition: Like new &middot; Price: 18.00 &euro;</p>
-            </li>
-            <li class="book-card" data-condition="good">
-                <h3>Puhdistus</h3>
-                <p class="book-author">Author: Sofi Oksanen</p>
-                <p>Condition: Good &middot; Price: 10.50 &euro;</p>
-            </li>
-            <li class="book-card" data-condition="worn">
-                <h3>Muumipappa ja meri</h3>
-                <p class="book-author">Author: Tove Jansson</p>
-                <p>Condition: Worn &middot; Price: 9.00 &euro;</p>
-            </li>
-        </ul>
+        </template>
+
+        <p class="pagination-wrap">
+            <button type="button" id="show-more-btn" hidden>Show more books</button>
+        </p>
 
         <h2>Looking for a Specific Book?</h2>
         <p>
