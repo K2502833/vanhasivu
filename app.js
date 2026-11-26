@@ -1,70 +1,216 @@
+const API_BASE = "https://vectorsigma.org" + "/briefer/api/v1";
+const CUSTOMER_ID = 10;
+
 // =========================================
-// 1. Catalogue Search, Filter & localStorage
+// 1. Catalogue API Fetch, Retry, Sort & Paging
 // =========================================
 const searchInput = document.getElementById("book-search");
-const conditionFilter = document.getElementById("condition-filter");
+const sortSelect = document.getElementById("sort-select");
+const catalogueForm = document.getElementById("catalogue-controls");
 const bookList = document.getElementById("book-list");
+const bookTemplate = document.getElementById("book-template");
 const resultsStatus = document.getElementById("results-status");
+const emptyState = document.getElementById("empty-state");
+const showMoreBtn = document.getElementById("show-more-btn");
 
-if (searchInput && conditionFilter && bookList && resultsStatus) {
-  const books = Array.from(bookList.querySelectorAll(".book-card"));
-  const STORAGE_KEY = "vanhasivu_catalogue_filter";
+if (bookList && bookTemplate && resultsStatus) {
+  const STORAGE_KEY = "vanhasivu_catalogue_api_state";
+  let conditionWords = {
+    "1": "poor",
+    "2": "worn",
+    "3": "fair",
+    "4": "good",
+    "5": "as new"
+  };
+  let nextCursor = null;
+  let totalCount = 0;
+  let loadedCount = 0;
 
-  function applyCatalogueFilters() {
-    const query = searchInput.value.trim().toLowerCase();
-    const selectedCondition = conditionFilter.value;
-    let visibleCount = 0;
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
 
-    books.forEach((book) => {
-      const text = book.textContent.toLowerCase();
-      const condition = book.dataset.condition || "";
-      const matchesText = text.includes(query);
-      const matchesCondition =
-        selectedCondition === "all" || condition === selectedCondition;
+  async function fetchWithRetry(url, maxRetries = 3) {
+    for (let attempt = 1; attempt <= maxRetries; attempt += 1) {
+      const res = await fetch(url);
 
-      if (matchesText && matchesCondition) {
-        book.hidden = false;
-        visibleCount += 1;
-      } else {
-        book.hidden = true;
+      if (res.status === 429) {
+        if (attempt === maxRetries) {
+          throw new Error("The catalogue server is very busy right now. Please try again shortly.");
+        }
+        const retryHeader = Number(res.headers.get("Retry-After"));
+        const waitSeconds = Number.isFinite(retryHeader) && retryHeader > 0 ? retryHeader : 3;
+        resultsStatus.textContent = `Server is busy — waiting ${waitSeconds} seconds before retrying (attempt ${attempt} of ${maxRetries})…`;
+        await sleep(waitSeconds * 1000);
+        continue;
       }
-    });
 
-    resultsStatus.textContent = `Showing ${visibleCount} of ${books.length} books`;
+      if (!res.ok) {
+        throw new Error(`Could not load books (server responded with ${res.status}).`);
+      }
 
-    try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ query: searchInput.value, condition: selectedCondition })
-      );
-    } catch {
-      // Ignore storage errors if blocked
+      return res.json();
     }
   }
 
-  // Restore saved filter on load
+  async function loadConditionWords() {
+    try {
+      const url = new URL(`${API_BASE}/customer`);
+      url.searchParams.set("customer", String(CUSTOMER_ID));
+      const customerData = await fetchWithRetry(url.toString(), 2);
+      if (customerData && customerData.conditions && typeof customerData.conditions === "object") {
+        conditionWords = customerData.conditions;
+      }
+    } catch {
+      // Keep default condition words if customer endpoint fails
+    }
+  }
+
+  function formatCondition(condValue) {
+    if (condValue === null || condValue === undefined || condValue === "") {
+      return "Condition not listed";
+    }
+    const word = conditionWords[String(condValue)];
+    return word ? `Condition: ${word}` : `Condition: ${condValue}`;
+  }
+
+  function formatPrice(priceValue) {
+    if (typeof priceValue === "number" && Number.isFinite(priceValue)) {
+      return `${priceValue.toFixed(2)} €`;
+    }
+    return "Price on request";
+  }
+
+  function renderBookCard(book) {
+    const fragment = bookTemplate.content.cloneNode(true);
+    const titleEl = fragment.querySelector(".book-title");
+    const authorEl = fragment.querySelector(".book-author");
+    const metaEl = fragment.querySelector(".book-meta");
+    const subjectsEl = fragment.querySelector(".book-subjects");
+
+    const titleText = book.title ? String(book.title) : "Untitled book";
+    const yearText = book.year ? ` (${book.year})` : "";
+    titleEl.textContent = `${titleText}${yearText}`;
+
+    authorEl.textContent = book.author ? `Author: ${book.author}` : "Author: Unknown";
+    metaEl.textContent = `${formatCondition(book.condition)} · ${formatPrice(book.price)}`;
+
+    if (Array.isArray(book.subjects) && book.subjects.length > 0) {
+      subjectsEl.textContent = `Subjects: ${book.subjects.join(", ")}`;
+    } else {
+      subjectsEl.textContent = "Subjects: General";
+    }
+
+    bookList.appendChild(fragment);
+  }
+
+  function saveFilterState() {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          q: searchInput ? searchInput.value : "",
+          sort: sortSelect ? sortSelect.value : ""
+        })
+      );
+    } catch {
+      // Ignore storage errors
+    }
+  }
+
+  async function loadBooks({ append = false } = {}) {
+    const query = searchInput ? searchInput.value.trim() : "";
+    const sort = sortSelect ? sortSelect.value : "";
+
+    bookList.setAttribute("aria-busy", "true");
+    if (emptyState) emptyState.hidden = true;
+    if (showMoreBtn) showMoreBtn.disabled = true;
+
+    if (!append) {
+      bookList.replaceChildren();
+      loadedCount = 0;
+      nextCursor = null;
+      resultsStatus.textContent = "Loading books from catalogue…";
+    } else {
+      resultsStatus.textContent = "Loading more books…";
+    }
+
+    const url = new URL(`${API_BASE}/items`);
+    url.searchParams.set("customer", String(CUSTOMER_ID));
+    url.searchParams.set("limit", "20");
+    if (query) url.searchParams.set("q", query);
+    if (sort) url.searchParams.set("sort", sort);
+    if (append && nextCursor) url.searchParams.set("cursor", nextCursor);
+
+    try {
+      const data = await fetchWithRetry(url.toString());
+      const items = Array.isArray(data.items) ? data.items : [];
+      totalCount = typeof data.total === "number" ? data.total : loadedCount + items.length;
+      nextCursor = data.next || null;
+
+      items.forEach((book) => renderBookCard(book));
+      loadedCount += items.length;
+
+      if (loadedCount === 0) {
+        resultsStatus.textContent = "Showing 0 of 0 books.";
+        if (emptyState) emptyState.hidden = false;
+      } else {
+        resultsStatus.textContent = `Showing ${loadedCount} of ${totalCount} books`;
+      }
+
+      if (showMoreBtn) {
+        showMoreBtn.hidden = !nextCursor;
+        showMoreBtn.disabled = false;
+      }
+    } catch (error) {
+      resultsStatus.textContent = error.message || "Could not load the book catalogue. Please try again later.";
+      if (showMoreBtn) {
+        showMoreBtn.hidden = !nextCursor;
+        showMoreBtn.disabled = false;
+      }
+    } finally {
+      bookList.setAttribute("aria-busy", "false");
+    }
+  }
+
+  // Restore saved search/sort from localStorage
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
     if (saved) {
-      if (typeof saved.query === "string") searchInput.value = saved.query;
-      if (typeof saved.condition === "string") conditionFilter.value = saved.condition;
+      if (searchInput && typeof saved.q === "string") searchInput.value = saved.q;
+      if (sortSelect && typeof saved.sort === "string") sortSelect.value = saved.sort;
     }
   } catch {
     // Ignore invalid JSON
   }
 
-  searchInput.addEventListener("input", applyCatalogueFilters);
-  conditionFilter.addEventListener("change", applyCatalogueFilters);
-
-  const catalogueForm = document.getElementById("catalogue-controls");
   if (catalogueForm) {
     catalogueForm.addEventListener("submit", (event) => {
       event.preventDefault();
-      applyCatalogueFilters();
+      saveFilterState();
+      loadBooks({ append: false });
     });
   }
 
-  applyCatalogueFilters();
+  if (sortSelect) {
+    sortSelect.addEventListener("change", () => {
+      saveFilterState();
+      loadBooks({ append: false });
+    });
+  }
+
+  if (showMoreBtn) {
+    showMoreBtn.addEventListener("click", () => {
+      if (nextCursor) {
+        loadBooks({ append: true });
+      }
+    });
+  }
+
+  (async function initCatalogue() {
+    await loadConditionWords();
+    await loadBooks({ append: false });
+  })();
 }
 
 // =========================================
@@ -133,7 +279,6 @@ if (wishForm) {
     }
   }
 
-  // Restore saved draft on page load
   try {
     const savedDraft = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null");
     if (savedDraft) {
@@ -162,7 +307,7 @@ if (wishForm) {
     event.preventDefault();
     let firstInvalid = null;
 
-    fields.forEach((field) => {
+       fields.forEach((field) => {
       const msg = field.validate(field.input.value);
       setFieldError(field, msg);
       if (msg && !firstInvalid) {

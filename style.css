@@ -361,3 +361,23 @@ input[aria-invalid="true"] {
     font-weight: 600;
     margin-top: var(--space-sm);
 }
+/* =========================================
+   10. E4 Empty State & Pagination Button
+   ========================================= */
+.empty-box {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: var(--radius);
+    padding: var(--space-md);
+    margin-block: var(--space-md);
+}
+
+.empty-box[hidden],
+#show-more-btn[hidden] {
+    display: none;
+}
+
+.pagination-wrap {
+    margin-block: var(--space-md);
+}
