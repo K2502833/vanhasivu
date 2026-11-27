@@ -40,3 +40,16 @@ Additional AI exercises and assistance will be recorded here as the E1 project p
   * Integrated the markup, styles, and JavaScript across `index.html`, `about.html`, `listing.html`, `contact.html`, `style.css`, and `app.js`.
   * Tested every interaction using keyboard only (`Tab`, `Enter`, `Space`, and `Esc` to close the popover).
   * Verified `localStorage` persistence after page reload, validation focus handling, `320 px` responsive layout without horizontal scrolling, and `4.5 : 1` contrast in both light and dark modes.
+
+## E4 – Course API Integration, Pagination, Sorting, and Error Handling
+
+* **Tools used:** Google Gemini, ChatGPT, and GitHub Copilot
+* **How I used AI for assistance:**
+  * Checked the structure of `fetch()` with `async`/`await`, `URL`, and `searchParams` to load book data for customer `10` (`Antikvariaatti Vanha Sivu`) and map numeric condition codes (`1`–`5`) to words from `/customer`.
+  * Reviewed patterns for handling `429 Too Many Requests` with `Retry-After` backoff, `500` server errors (`res.ok`), empty search states, and missing/`null` book fields safely via `<template>` and `textContent`.
+  * Verified how to implement cursor-based pagination (`next` / `&cursor=`) and server-side price sorting (`&sort=price`) requested in the client change request.
+  * Used Copilot for small syntax completions while integrating the API code into my existing `app.js` and `style.css`.
+* **What I implemented and verified myself:**
+  * Updated `listing.html` with `<template>`, search and price-sort controls, an empty-state wish link, and a "Show more books" button, while keeping `<header>`, `<nav>`, and `<footer>` identical across all four HTML pages.
+  * Tested the live catalogue against simulated API states (`slow`, `empty`, `429`, and `500`) in browser DevTools and confirmed no `mode` or `simulate` parameters remain in the final code.
+  * Verified keyboard navigation, `aria-busy` / `role="status"` announcements, `320 px` responsive layout, and `4.5 : 1` colour contrast in both light and dark modes.

@@ -271,6 +271,7 @@ footer p {
     padding: 0.45rem 0.75rem;
     font-size: 1rem;
     font-weight: 600;
+        align-self: flex-start;
 }
 
 [popover] {

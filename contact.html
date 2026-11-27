@@ -18,16 +18,9 @@
                 <li><a href="about.html">About Us</a></li>
                 <li><a href="listing.html">Book Catalogue</a></li>
                 <li><a href="contact.html" aria-current="page">Contact</a></li>
-                <li><button type="button" class="nav-popover-btn" popovertarget="shop-info">Shop Hours</button></li>
             </ul>
         </nav>
-        <div id="shop-info" popover>
-            <h2>Opening Hours &amp; Info</h2>
-            <p>Tue–Fri: 11:00–17:00</p>
-            <p>Sat: 10:00–14:00</p>
-            <p>Address: Ostostie 4, 63700 Ähtäri</p>
-            <button type="button" popovertarget="shop-info" popovertargetaction="hide">Close</button>
-        </div>
+        <button type="button" class="nav-popover-btn" popovertarget="shop-info">Shop Hours</button>
     </header>
 
     <main>
@@ -75,6 +68,14 @@
         <p>&copy; 2026 Antikvariaatti Vanha Sivu</p>
         <p>Ähtäri, Finland</p>
     </footer>
+
+    <div id="shop-info" popover>
+        <h2>Opening Hours &amp; Info</h2>
+        <p>Tue–Fri: 11:00–17:00</p>
+        <p>Sat: 10:00–14:00</p>
+        <p>Address: Ostostie 4, 63700 Ähtäri</p>
+        <button type="button" popovertarget="shop-info" popovertargetaction="hide">Close</button>
+    </div>
 
 </body>
 </html>
